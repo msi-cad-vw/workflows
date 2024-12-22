@@ -1,4 +1,4 @@
-name: Docker Build and Push
+name: Build and push docker images
 
 on:
   workflow_call:
@@ -48,7 +48,7 @@ jobs:
           ref: ${{ inputs.branch }}
       
       - name: Build Docker Image
-        run: docker build --tag ${{ env.DOCKER_IMG_PATH }} --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
+        run: docker build --tag ${{ inputs.service }}:latest --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
 
       - name: Tag Docker image
         run: docker tag ${{ inputs.service }}:latest ${{ env.DOCKER_IMG_PATH }}
