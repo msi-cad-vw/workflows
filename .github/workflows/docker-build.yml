@@ -9,7 +9,16 @@ on:
       dockerfile:
         required: true
         type: string
+      docker_build_path:
+        required: false
+        default: .
+        type: string
+      service:
+        required: true
+        type: string
     secrets:
+      GC_SERVICE_ACCOUNT:
+        required: true
       GC_SERVICE_ACCOUNT_SECRET:
         required: true
       GC_PROJECT_ID:
@@ -17,6 +26,8 @@ on:
 
 env:
   DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/frontend:latest
+  GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
 
 jobs:
   build:
@@ -37,7 +48,10 @@ jobs:
           ref: ${{ inputs.branch }}
       
       - name: Build Docker Image
-        run: docker build --tag ${{ env.DOCKER_IMG_PATH }} --file ${{ inputs.dockerfile }} .
+        run: docker build --tag ${{ env.DOCKER_IMG_PATH }} --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
+
+      - name: Tag Docker image
+        run: docker tag ${{ inputs.service }}:latest ${{ env.DOCKER_IMG_PATH }}
 
       - name: Push Docker Image
         run: docker push ${{ env.DOCKER_IMG_PATH }}
