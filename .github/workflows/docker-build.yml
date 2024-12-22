@@ -1,4 +1,5 @@
-name: Build and push docker images
+name: Build and push Docker-Images
+run-name: Build and Push Docker-Images
 
 on:
   workflow_call:
@@ -25,7 +26,7 @@ on:
         required: true
 
 env:
-  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/frontend:latest
+  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}:latest
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
 
