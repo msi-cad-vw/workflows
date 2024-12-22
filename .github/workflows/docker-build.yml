@@ -1,0 +1,43 @@
+name: Docker Build and Push
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      dockerfile:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+    secrets:
+      GC_SERVICE_ACCOUNT_SECRET:
+        required: true
+      GC_PROJECT_ID:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to Google Cloud
+        run: |
+          echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account \
+            "${{ secrets.GC_SERVICE_ACCOUNT_EMAIL }}" --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          gcloud config set project ${{ secrets.GC_PROJECT_ID }}
+      
+      - name: Docker auth
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+      
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      
+      - name: Build Docker Image
+        run: docker build --tag ${{ inputs.image_name }} --file ${{ inputs.dockerfile }} .
+
+      - name: Push Docker Image
+        run: docker push ${{ inputs.image_name }}
