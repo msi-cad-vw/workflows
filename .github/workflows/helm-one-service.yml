@@ -40,7 +40,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./helm
+        working-directory: ./helm/backend
 
     steps:
     - name: Checkout
@@ -64,7 +64,7 @@ jobs:
     - name: Install service
       if: ${{ inputs.restart == true }}
       run: |
-        helm install parkspace-${{ inputs.name }} ./backend/ --set namespace=${{ inputs.name }}
+        helm install parkspace-${{ inputs.name }} . --set namespace=${{ inputs.name }}
 
     - name: Uninstall service
       if: ${{ inputs.restart == false }}
