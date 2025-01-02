@@ -9,10 +9,6 @@ on:
         required: false
         type: string
         default: msi-cad-vw-cluster
-      bucket:
-        required: false
-        type: string
-        default: "msi-cad-vw-terraform-backend"
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -20,6 +16,8 @@ on:
       GC_SERVICE_ACCOUNT_SECRET:
         required: true
       GC_PROJECT_ID:
+        required: true
+      GC_BACKEND_BUCKET:
         required: true
 
 env:
@@ -58,7 +56,7 @@ jobs:
 
     - name: Download Tenants.json from Bucket and print tenants
       run: |
-        gcloud storage cp gs://${{ inputs.bucket }} /tenants.json tenants.json
+        gcloud storage cp gs://${{ secrets.GC_BACKEND_BUCKET }}/tenants.json tenants.json
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
           echo $tenant
