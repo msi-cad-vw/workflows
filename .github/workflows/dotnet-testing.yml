@@ -1,10 +1,9 @@
-name: Build and push Docker-Images
-run-name: Build and Push Docker-Images
+name: Test dotnet application
 
 on:
   workflow_call:
     inputs:
-      dotnetVersion:
+      dotnet-version:
         required: true
         type: string
 
@@ -16,7 +15,7 @@ jobs:
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: ${{ inputs.dotnetVersion }}
+          dotnet-version: ${{ inputs.dotnet-version }}
 
       # You can test your matrix by printing the current dotnet version
       - name: Display dotnet version
@@ -24,6 +23,6 @@ jobs:
 
       - name: Install dependencies
         run: dotnet restore
-        
+
       - name: Test with dotnet
         run: dotnet test --logger trx
