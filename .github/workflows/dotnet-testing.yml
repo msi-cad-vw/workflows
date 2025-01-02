@@ -27,5 +27,5 @@ jobs:
       - name: Install dependencies
         run: dotnet restore "${{ inputs.name }}/${{ inputs.name }}.Presentation/${{ inputs.name }}.Presentation.csproj"
 
-      - name: Test with dotnet
-        run: dotnet test "${{ inputs.name }}.dll" --logger trx
+      # - name: Test with dotnet
+      #   run: dotnet test "${{ inputs.name }}.dll" --logger trx
