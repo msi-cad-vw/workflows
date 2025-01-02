@@ -1,5 +1,4 @@
-name: Build and push Docker-Images
-run-name: Build and Push Docker-Images
+name: Upgrade Helm Services
 
 on:
   workflow_call:
