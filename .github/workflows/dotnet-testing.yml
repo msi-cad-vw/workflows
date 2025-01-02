@@ -6,6 +6,9 @@ on:
       dotnet-version:
         required: true
         type: string
+      name: # e.g. Msi.Cad.FacilityManagement.Presentation
+        required: true
+        type: string
 
 jobs:
   build:
@@ -22,7 +25,7 @@ jobs:
         run: dotnet --version
 
       - name: Install dependencies
-        run: dotnet restore
+        run: dotnet restore "${{ inputs.name }}/${{ inputs.name }}.csproj"
 
       - name: Test with dotnet
-        run: dotnet test --logger trx
+        run: dotnet test ""${{ inputs.name }}.dll" --logger trx
