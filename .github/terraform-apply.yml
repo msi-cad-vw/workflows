@@ -1,5 +1,4 @@
-name: Build and push Docker-Images
-run-name: Build and Push Docker-Images
+name: Start Application and Cluster
 
 on:
   workflow_call:
