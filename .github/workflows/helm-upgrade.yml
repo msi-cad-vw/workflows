@@ -13,7 +13,7 @@ on:
       bucket:
         required: false
         type: string
-        default: ${{ inputs.bucket }}
+        default: "msi-cad-vw-terraform-backend"
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
