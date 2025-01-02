@@ -104,4 +104,4 @@ jobs:
     - name: On failure
       if: failure()
       run: |
-        echo "Kubernetes Cluster is not running"
+        echo "Services not running"

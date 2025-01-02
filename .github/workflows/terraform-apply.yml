@@ -6,6 +6,9 @@ on:
       branch:
         required: true
         type: string
+      bucket:
+        required: true
+        type: string
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -45,11 +48,11 @@ jobs:
     - name: Terraform Init - Migrate state
       run: terraform init -migrate-state 
 
-    - name: Terraform Plan
-      run: terraform plan -input=false
+    - name: Terraform Plan 
+      run: terraform plan -var="project=${{ secrets.GC_PROJECT_ID }}"  -var="backend_bucket=${{ inputs.bucket }}"
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve -input=false
+      run: terraform apply -auto-approve -var="project=${{ secrets.GC_PROJECT_ID }}"  -var="backend_bucket=${{ inputs.bucket }}"
 
     - name: Terraform Init - Migrate state
       run: terraform init -migrate-state 
