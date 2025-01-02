@@ -1,4 +1,4 @@
-name: Start Services with Helm
+name: Install or uninstall one helm service
 on:
   workflow_call:
     inputs:
@@ -9,6 +9,13 @@ on:
         required: false
         type: string
         default: msi-cad-vw-cluster
+      name:
+        required: true
+        type: string
+      restart:
+        required: false
+        type: boolean
+        default: true      
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -62,39 +69,14 @@ jobs:
           echo $tenant
         done
 
-    - name: Start services with helm - Frontend and Gateway
+    - name: Install service
+      if: ${{ inputs.restart == true }}
       continue-on-error: true
       run: |
-        helm install gateway ./infrastructure/
-        helm install frontend ./frontend/  
+        helm install parkspace-${{ inputs.name }} ./backend/ --set namespace=${{ inputs.name }}
 
-    # Deploy the Docker image to the GKE cluster
-    - name: Start backend for each tenant with helm
-      continue-on-error: true 
+    - name: Uninstall service
+      if: ${{ inputs.restart == false }}
+      continue-on-error: true
       run: |
-        tenants=$(jq -r '.[].name' tenants.json)
-        for tenant in $tenants; do
-          helm install parkspace-$tenant ./backend/ --set namespace=$tenant
-        done
-
-    # Create secrets and keys
-    - name: Get Key and create it for each namespace
-      continue-on-error: true 
-      run: |
-        gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
-
-        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
-        tenants=$(jq -r '.[].name' tenants.json)
-        for tenant in $tenants; do
-          kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n $tenant
-        done
-
-    - name: Upgrade services
-      run: |
-        helm upgrade gateway ./infrastructure/
-        helm upgrade frontend ./frontend/  
-
-        tenants=$(jq -r '.[].name' tenants.json)
-        for tenant in $tenants; do
-          helm upgrade parkspace-$tenant ./backend/ --set namespace=$tenant
-        done
+        helm uninstall parkspace-${{ inputs.name }}
