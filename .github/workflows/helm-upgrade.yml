@@ -101,3 +101,8 @@ jobs:
         for tenant in $tenants; do
           helm upgrade parkspace-$tenant ./backend/ --set namespace=$tenant
         done
+
+    - name: On failure
+      if: failure()
+      run: |
+        echo "Kubernetes Cluster is not running"

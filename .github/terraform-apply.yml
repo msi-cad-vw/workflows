@@ -1,0 +1,56 @@
+name: Build and push Docker-Images
+run-name: Build and Push Docker-Images
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+    secrets:
+      GC_SERVICE_ACCOUNT:
+        required: true
+      GC_SERVICE_ACCOUNT_SECRET:
+        required: true
+      GC_PROJECT_ID:
+        required: true
+
+env:
+  GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform/startup
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+
+    - name: Authenticate to Google Cloud
+      run: |
+        echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $GOOGLE_APPLICATION_CREDENTIALS
+        echo $SERVICE_ACCOUNT_EMAIL
+        gcloud auth activate-service-account $SERVICE_ACCOUNT_EMAIL --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+        gcloud config set project ${{ secrets.GC_PROJECT_ID }}
+
+    - name: Terraform Init - Migrate state
+      run: terraform init -migrate-state 
+
+    - name: Terraform Plan
+      run: terraform plan -input=false
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -input=false
+
+    - name: Terraform Init - Migrate state
+      run: terraform init -migrate-state 
