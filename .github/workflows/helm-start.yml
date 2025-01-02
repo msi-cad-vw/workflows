@@ -80,7 +80,7 @@ jobs:
     # Create secrets and keys
     - name: Get Key and create it for each namespace
       run: |
-        gcloud iam service-accounts keys create key.json --iam-account=msi-cad-vw-service-account@msi-cad-vw-parkspace.iam.gserviceaccount.com
+        gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
 
         kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
         tenants=$(jq -r '.[].name' tenants.json)
