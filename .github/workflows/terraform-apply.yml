@@ -6,6 +6,10 @@ on:
       branch:
         required: true
         type: string
+      workdir:
+        required: false
+        type: string
+        default: ./terraform/startup
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -28,7 +32,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./terraform/startup
+        working-directory: ${{ inputs.workdir }}
 
     steps:
     - name: Checkout
