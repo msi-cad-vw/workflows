@@ -6,6 +6,10 @@ on:
       branch:
         required: true
         type: string
+      cluster: 
+        required: false
+        type: string
+        default: msi-cad-vw-cluster
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -17,7 +21,6 @@ on:
 env:
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
-  CLUSTER: msi-cad-vw-cluster
   REGION: europe-west1-c 
 
 jobs:
@@ -45,7 +48,7 @@ jobs:
     - name: Get GKE credentials
       uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
       with:
-        cluster_name: ${{ env.CLUSTER }}
+        cluster_name: ${{ inputs.cluster }}
         location: ${{ env.REGION }}
         project_id: ${{ secrets.GC_PROJECT_ID }}
 
@@ -77,7 +80,7 @@ jobs:
     - name: Get GKE credentials
       uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
       with:
-        cluster_name: ${{ env.CLUSTER }}
+        cluster_name: ${{ inputs.cluster }}
         location: ${{ env.REGION }}
         project_id: ${{ secrets.GC_PROJECT_ID }}
 
