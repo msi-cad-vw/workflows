@@ -21,6 +21,7 @@ on:
         required: true
 
 env:
+  HELM_CHART_PATH: oci://europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/helm-repo
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
   REGION: europe-west1-c 
@@ -68,8 +69,8 @@ jobs:
     - name: Start services with helm - Frontend and Gateway
       continue-on-error: true
       run: |
-        helm install gateway ./infrastructure/
-        helm install frontend ./frontend/  
+        helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
+        helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
 
     # Deploy the Docker image to the GKE cluster
     - name: Start backend for each tenant with helm
@@ -77,7 +78,7 @@ jobs:
       run: |
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm install parkspace-$tenant ./backend/ --set namespace=$tenant
+          helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant
         done
 
     # Create secrets and keys
@@ -94,10 +95,10 @@ jobs:
 
     - name: Upgrade services
       run: |
-        helm upgrade gateway ./infrastructure/
-        helm upgrade frontend ./frontend/  
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
+        helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
 
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm upgrade parkspace-$tenant ./backend/ --set namespace=$tenant
+          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant
         done
