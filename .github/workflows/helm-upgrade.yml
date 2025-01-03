@@ -32,11 +32,6 @@ jobs:
     name: 'Check Kubernetes'
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./helm
-
     steps:
     - name: Checkout
       uses: actions/checkout@v4
