@@ -88,6 +88,9 @@ jobs:
         location: ${{ env.REGION }}
         project_id: ${{ secrets.GC_PROJECT_ID }}
 
+    - name: Docker auth
+      run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+  
     - name: Download Tenants.json from Bucket and print tenants
       run: |
         gcloud storage cp gs://${{ secrets.GC_BACKEND_BUCKET }}/tenants.json tenants.json
