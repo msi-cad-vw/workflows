@@ -22,6 +22,7 @@ on:
         required: true
 
 env:
+  HELM_CHART_PATH: oci://europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/helm-repo
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
   REGION: europe-west1-c 
@@ -97,14 +98,14 @@ jobs:
     
     - name: Upgrade services with helm - Frontend and Gateway
       run: |
-        helm upgrade gateway ./infrastructure/
-        helm upgrade frontend ./frontend/  
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
+        helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
 
     - name: Start backend for each tenant with helm
       run: |
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm upgrade parkspace-$tenant ./backend/ --set namespace=$tenant
+          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant
         done
 
     - name: On failure

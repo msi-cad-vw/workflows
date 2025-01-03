@@ -1,4 +1,5 @@
-name: Install or uninstall one helm service
+name: Install one new helm tenant
+
 on:
   workflow_call:
     inputs:
@@ -28,19 +29,15 @@ on:
         required: true
 
 env:
+  HELM_CHART_PATH: oci://europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/helm-repo
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
   REGION: europe-west1-c 
 
 jobs:
   build:
-    name: Start or Stop Services
+    name: Install or uninstall one helm tenant
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./helm/backend
 
     steps:
     - name: Checkout
@@ -60,11 +57,14 @@ jobs:
         cluster_name: ${{ inputs.cluster }}
         location: ${{ env.REGION }}
         project_id: ${{ secrets.GC_PROJECT_ID }}
+        
+    - name: Docker auth
+      run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
 
     - name: Install service
       if: ${{ inputs.restart == true }}
       run: |
-        helm install parkspace-${{ inputs.name }} . --set namespace=${{ inputs.name }}
+        helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=${{ inputs.name }}
 
     - name: Uninstall service
       if: ${{ inputs.restart == false }}
