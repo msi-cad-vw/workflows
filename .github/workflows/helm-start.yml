@@ -63,6 +63,9 @@ jobs:
           echo $tenant
         done
 
+    - name: Docker auth
+      run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+
     - name: Get version
       run: helm version
 
