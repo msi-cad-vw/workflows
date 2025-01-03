@@ -58,14 +58,6 @@ jobs:
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
       
       - uses: actions/checkout@v4
-      
-      - name: List
-        run: |
-          ls -la
-          ls -la helm
-          ls -la helm/backend
-          ls -la helm/frontend
-          ls -la ${{ inputs.service_dir }}
 
       - name: Create Helm Chart tgz
         run: helm package ${{ inputs.service_dir }} --version ${{ inputs.version }}
