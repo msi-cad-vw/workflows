@@ -62,7 +62,10 @@ jobs:
           ref: ${{ inputs.branch }}
       
       - name: List
-        run: ls -la
+        run: |
+          ls -la
+          ls -la ${{ inputs.service_dir }}
+          ls -ls helm
 
       - name: Create Helm Chart tgz
         run: helm package ${{ inputs.service_dir }} --version ${{ inputs.version }}
