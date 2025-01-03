@@ -62,6 +62,9 @@ jobs:
           echo $tenant
         done
 
+    - name: Get version
+      run: helm version
+
     - name: Start services with helm - Frontend and Gateway
       continue-on-error: true
       run: |
