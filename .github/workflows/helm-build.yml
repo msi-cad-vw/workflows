@@ -1,0 +1,68 @@
+name: Build and push Docker-Images
+run-name: Build and Push Docker-Images
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      service:
+        required: true
+        type: string
+      service_dir:
+        required: true
+        type: string
+      cluster: 
+        required: false
+        type: string
+        default: msi-cad-vw-cluster
+      version:
+        required: false
+        type: string
+        default: "0.1.0"
+    secrets:
+      GC_SERVICE_ACCOUNT:
+        required: true
+      GC_SERVICE_ACCOUNT_SECRET:
+        required: true
+      GC_PROJECT_ID:
+        required: true
+
+env:
+  HELM_CHART_PATH: oci://europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/helm-repo/${{ inputs.service }}
+  GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+  REGION: europe-west1-c 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to Google Cloud
+        run: |
+          echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account \
+            "${{ secrets.GC_SERVICE_ACCOUNT_EMAIL }}" --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          gcloud config set project ${{ secrets.GC_PROJECT_ID }}
+      
+      # Get the GKE credentials so we can deploy to the cluster
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
+        with:
+            cluster_name: ${{ inputs.cluster }}
+            location: ${{ env.REGION }}
+            project_id: ${{ secrets.GC_PROJECT_ID }}
+
+      - name: Docker auth
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+      
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      
+      - name: Create Helm Chart tgz
+        run: helm package ${{ inputs.service_dir }} --version ${{ inputs.version }}
+
+      - name: Push Helm Chart
+        run: helm push helm-${{ inputs.version }}.tgz ${{ env.HELM_CHART_PATH }}
