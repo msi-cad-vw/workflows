@@ -58,8 +58,6 @@ jobs:
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
       
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.branch }}
       
       - name: List
         run: |
