@@ -38,6 +38,12 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./helm
+
     steps:
       - name: Authenticate to Google Cloud
         run: |
@@ -61,6 +67,9 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
       
+      - name: List
+        run: ls -la
+
       - name: Create Helm Chart tgz
         run: helm package ${{ inputs.service_dir }} --version ${{ inputs.version }}
 
