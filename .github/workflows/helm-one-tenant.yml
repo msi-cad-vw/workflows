@@ -16,7 +16,15 @@ on:
       restart:
         required: false
         type: boolean
-        default: true      
+        default: true   
+      database:
+        required: false
+        type: string
+        default: msi-cad-vw-database
+      bucket:
+        required: false
+        type: string
+        default: msi-cad-vw-bucket   
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -64,7 +72,7 @@ jobs:
     - name: Install service
       if: ${{ inputs.restart == true }}
       run: |
-        helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=${{ inputs.name }}
+        helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=${{ inputs.name }} --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
 
     - name: Uninstall service
       if: ${{ inputs.restart == false }}

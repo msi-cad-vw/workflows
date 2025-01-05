@@ -10,6 +10,14 @@ on:
         required: false
         type: string
         default: msi-cad-vw-cluster
+      database:
+        required: false
+        type: string
+        default: msi-cad-vw-database
+      bucket:
+        required: false
+        type: string
+        default: msi-cad-vw-bucket
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -89,16 +97,17 @@ jobs:
           echo $tenant
         done
     
-    - name: Upgrade services with helm - Frontend and Gateway
+    - name: Upgrade services with helm - Frontend, Gateway and Authentication
       run: |
         helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
         helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
+        helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
 
     - name: Start backend for each tenant with helm
       run: |
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant
+          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
         done
 
     - name: On failure

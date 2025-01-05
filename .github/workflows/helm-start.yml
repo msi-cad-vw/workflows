@@ -9,6 +9,14 @@ on:
         required: false
         type: string
         default: msi-cad-vw-cluster
+      database:
+        required: false
+        type: string
+        default: msi-cad-vw-database
+      bucket:
+        required: false
+        type: string
+        default: msi-cad-vw-bucket
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -64,11 +72,12 @@ jobs:
     - name: Get version
       run: helm version
 
-    - name: Start services with helm - Frontend and Gateway
+    - name: Start services with helm - Frontend, Gateway, Authentiation
       continue-on-error: true
       run: |
         helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
         helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
+        helm install authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
 
     # Deploy the Docker image to the GKE cluster
     - name: Start backend for each tenant with helm
@@ -76,7 +85,7 @@ jobs:
       run: |
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant
+          helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
         done
 
     # Create secrets and keys
@@ -95,8 +104,9 @@ jobs:
       run: |
         helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
         helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
+        helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
 
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant
+          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
         done
