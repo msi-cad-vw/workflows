@@ -72,7 +72,7 @@ jobs:
     - name: Install service
       if: ${{ inputs.restart == true }}
       run: |
-        helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=${{ inputs.name }} --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
+        helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=${{ inputs.name }} --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
 
     - name: Uninstall service
       if: ${{ inputs.restart == false }}

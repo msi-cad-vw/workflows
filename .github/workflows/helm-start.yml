@@ -75,13 +75,13 @@ jobs:
     - name: Start services with helm - Frontend and Gateway
       continue-on-error: true
       run: |
-        helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
-        helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
+        helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
       
     - name: Install Authentication
       continue-on-error: true
       run: |
-        helm install authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
+        helm install authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
 
     # Deploy the Docker image to the GKE cluster
     - name: Start backend for each tenant with helm
@@ -89,7 +89,7 @@ jobs:
       run: |
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
+          helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
         done
 
     # Create secrets and keys
@@ -107,11 +107,11 @@ jobs:
 
     - name: Upgrade services
       run: |
-        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
-        helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
-        helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
 
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
+          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
         done
