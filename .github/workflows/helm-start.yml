@@ -97,6 +97,7 @@ jobs:
       continue-on-error: true 
       run: |
         gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
+        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n authentication
 
         kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
         tenants=$(jq -r '.[].name' tenants.json)
