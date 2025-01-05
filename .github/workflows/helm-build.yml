@@ -46,14 +46,6 @@ jobs:
             "${{ secrets.GC_SERVICE_ACCOUNT_EMAIL }}" --key-file=$GOOGLE_APPLICATION_CREDENTIALS
           gcloud config set project ${{ secrets.GC_PROJECT_ID }}
       
-      # Get the GKE credentials so we can deploy to the cluster
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
-        with:
-            cluster_name: ${{ inputs.cluster }}
-            location: ${{ env.REGION }}
-            project_id: ${{ secrets.GC_PROJECT_ID }}
-
       - name: Docker auth
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
       
