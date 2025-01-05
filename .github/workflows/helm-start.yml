@@ -79,6 +79,7 @@ jobs:
         helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
       
     - name: Install Authentication
+      continue-on-error: true
       run: |
         helm install authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
 
