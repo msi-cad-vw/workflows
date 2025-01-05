@@ -97,10 +97,13 @@ jobs:
           echo $tenant
         done
     
-    - name: Upgrade services with helm - Frontend, Gateway and Authentication
+    - name: Upgrade services with helm - Frontend and Gateway
       run: |
         helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
         helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
+        
+    - name: Upgrade Authentication
+      run: |
         helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
 
     - name: Start backend for each tenant with helm

@@ -72,11 +72,14 @@ jobs:
     - name: Get version
       run: helm version
 
-    - name: Start services with helm - Frontend, Gateway, Authentiation
+    - name: Start services with helm - Frontend and Gateway
       continue-on-error: true
       run: |
         helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm
         helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm
+      
+    - name: Install Authentication
+      run: |
         helm install authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }}
 
     # Deploy the Docker image to the GKE cluster
