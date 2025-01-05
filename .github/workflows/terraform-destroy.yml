@@ -10,6 +10,10 @@ on:
         required: false
         type: string
         default: ./terraform/startup
+      key_id:
+        required: false
+        type: string
+        default: 1900ba61cb6081c6326afcfa624ad79b57d8fd48
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -61,4 +65,12 @@ jobs:
     #   run: terraform destroy -auto-approve -input=false -target=google_service_account.sa
 
     - name: Terraform Init - Migrate state
-      run: terraform init -migrate-state    
+      run: terraform init -migrate-state
+
+    - name: Delete not used keys
+      run: |
+        for key in $(gcloud iam service-accounts keys list --iam-account ${{ env.SERVICE_ACCOUNT_EMAIL }} --format="value(KEY_ID)"); do
+          if [ "$key" != "${{inputs.key_id}}" ]; then
+            gcloud iam service-accounts keys delete $key --iam-account ${{ env.SERVICE_ACCOUNT_EMAIL }} --quiet
+          fi
+        done
