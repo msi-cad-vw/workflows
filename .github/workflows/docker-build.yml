@@ -50,8 +50,8 @@ jobs:
         run: |
           echo "${{ secrets.REACT_JS_ENV }}" > app/.env
           cat app/.env
-          ls -l
-          ls -l app
+          ls -la
+          ls -la app
       
       - name: Build Docker Image
         run: docker build --tag ${{ inputs.service }}:latest --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
