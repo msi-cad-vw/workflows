@@ -52,7 +52,6 @@ jobs:
           echo "${{ secrets.REACT_JS_ENV }}" > .env
           cat .env
           ls -la
-          ls -la app
 
           while IFS='=' read -r name value; do
             export "$name=$value"
