@@ -4,9 +4,6 @@ run-name: Build and Push Docker-Images
 on:
   workflow_call:
     inputs:
-      branch:
-        required: true
-        type: string
       service:
         required: true
         type: string

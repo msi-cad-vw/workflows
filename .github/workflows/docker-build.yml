@@ -4,9 +4,6 @@ run-name: Build and Push Docker-Images
 on:
   workflow_call:
     inputs:
-      branch:
-        required: true
-        type: string
       dockerfile:
         required: true
         type: string
@@ -45,8 +42,6 @@ jobs:
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
       
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.branch }}
       
       - name: Build Docker Image
         run: docker build --tag ${{ inputs.service }}:latest --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}

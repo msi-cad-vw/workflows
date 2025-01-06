@@ -3,9 +3,6 @@ name: Start Application and Cluster
 on:
   workflow_call:
     inputs:
-      branch:
-        required: true
-        type: string
       workdir:
         required: false
         type: string

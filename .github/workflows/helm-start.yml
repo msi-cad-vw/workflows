@@ -2,9 +2,6 @@ name: Start Services with Helm
 on:
   workflow_call:
     inputs:
-      branch:
-        required: true
-        type: string
       cluster: 
         required: false
         type: string
