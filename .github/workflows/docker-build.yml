@@ -21,6 +21,8 @@ on:
         required: true
       GC_PROJECT_ID:
         required: true
+      REACT_JS_ENV:
+        required: false
 
 env:
   DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}:latest
@@ -42,6 +44,12 @@ jobs:
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
       
       - uses: actions/checkout@v4
+
+      - name: Create frontend env
+        if: ${{ inputs.service == 'frontend' }}
+        run: |
+          echo "${{ secrets.REACT_JS_ENV }}" > .env
+          cat .env
       
       - name: Build Docker Image
         run: docker build --tag ${{ inputs.service }}:latest --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
