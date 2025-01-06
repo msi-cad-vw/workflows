@@ -57,7 +57,7 @@ jobs:
             export "$name=$value"
           done < .env
 
-          npm run install
+          npm install
           npm run build
       
       - name: Build Docker Image
