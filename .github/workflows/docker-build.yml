@@ -56,7 +56,7 @@ jobs:
 
           while IFS='=' read -r name value; do
             export "$name=$value"
-          done < app/.env
+          done < .env
 
           npm run install
           npm run build
