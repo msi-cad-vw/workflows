@@ -18,6 +18,24 @@ on:
       version:
         required: true
         type: string
+      frontend-version:
+        required: true
+        type: string
+      parking-garages-version:
+        required: true
+        type: string
+      parking-management-version:
+        required: true
+        type: string
+      user-tenant-management-version:
+        required: true
+        type: string
+      defect-management-version:
+        required: true
+        type: string
+      facility-management-version:
+        required: true
+        type: string
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -99,18 +117,33 @@ jobs:
     
     - name: Upgrade services with helm - Frontend and Gateway
       run: |
-        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }} 
-        helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
-        
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+
+        helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+          --set frontend.version=${{ inputs.frontend-version }}
+
     - name: Upgrade Authentication
       run: |
-        helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm \
+          --set resources.database=${{inputs.database}} \
+          --set resources.bucket=${{ inputs.bucket }} \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }}
 
     - name: Start backend for each tenant with helm
       run: |
         tenants=$(jq -r '.[].name' tenants.json)
         for tenant in $tenants; do
-          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=$tenant --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
+            --set namespace=$tenant \
+            --set resources.database=${{inputs.database}} \
+            --set resources.bucket=${{ inputs.bucket }} \
+            --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+            --set parkingManagement.version=${{ inputs.parking-management-version }}
+            --set parkingGarages.version=${{ inputs.parking-garages-version }}
+            --set facilityManagement.version=${{ inputs.facility-management-version }}
+            --set defectManagement.version=${{ inputs.defect-management-version }}
         done
 
     - name: On failure

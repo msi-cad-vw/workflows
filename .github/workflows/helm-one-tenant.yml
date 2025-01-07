@@ -22,6 +22,18 @@ on:
         required: false
         type: string
         default: msi-cad-vw-bucket   
+      parking-garages-version:
+        required: true
+        type: string
+      parking-management-version:
+        required: true
+        type: string
+      defect-management-version:
+        required: true
+        type: string
+      facility-management-version:
+        required: true
+        type: string
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -69,7 +81,15 @@ jobs:
     - name: Install service
       if: ${{ inputs.restart == true }}
       run: |
-        helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm --set namespace=${{ inputs.name }} --set resources.database=${{inputs.database}} --set resources.bucket=${{ inputs.bucket }} --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm \
+          --set namespace=${{ inputs.name }} \
+          --set resources.database=${{inputs.database}} \
+          --set resources.bucket=${{ inputs.bucket }} \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set parkingManagement.version=${{ inputs.parking-management-version }}
+          --set parkingGarages.version=${{ inputs.parking-garages-version }}
+          --set facilityManagement.version=${{ inputs.facility-management-version }}
+          --set defectManagement.version=${{ inputs.defect-management-version }}
 
     - name: Uninstall service
       if: ${{ inputs.restart == false }}
