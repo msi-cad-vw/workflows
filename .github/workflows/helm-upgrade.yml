@@ -117,7 +117,7 @@ jobs:
         helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
 
         helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm \
-          --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
           --set frontend.version=${{ inputs.frontend-version }}
 
     - name: Upgrade Authentication
@@ -125,7 +125,7 @@ jobs:
         helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm \
           --set resources.database=${{inputs.database}} \
           --set resources.bucket=${{ inputs.bucket }} \
-          --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
           --set userTenantManagement.version=${{ inputs.user-tenant-management-version }}
 
     - name: Start backend for each tenant with helm
@@ -137,9 +137,9 @@ jobs:
             --set resources.database=${{inputs.database}} \
             --set resources.bucket=${{ inputs.bucket }} \
             --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-            --set parkingManagement.version=${{ inputs.parking-management-version }}
-            --set parkingGarages.version=${{ inputs.parking-garages-version }}
-            --set facilityManagement.version=${{ inputs.facility-management-version }}
+            --set parkingManagement.version=${{ inputs.parking-management-version }} \
+            --set parkingGarages.version=${{ inputs.parking-garages-version }} \
+            --set facilityManagement.version=${{ inputs.facility-management-version }} \
             --set defectManagement.version=${{ inputs.defect-management-version }}
         done
 
