@@ -6,13 +6,19 @@ on:
       branch:
         required: true
         type: string
-      service:
-        required: true
-        type: string
     outputs:
-      version:
-        description: "The incremented version number"
-        value: ${{ jobs.set-version.outputs.version }}
+      frontend-version:
+        value: ${{ jobs.set-version.outputs.frontend-version }}
+      parking-garages-version:
+          value: ${{ jobs.set-version.outputs.parking-garages-version }}
+      parking-management-version:
+          value: ${{ jobs.set-version.outputs.parking-management-version }}
+      facility-management-version:
+          value: ${{ jobs.set-version.outputs.facility-management-version }}
+      defect-management-version:
+          value: ${{ jobs.set-version.outputs.defect-management-version }}
+      user-tenant-management-version:
+          value: ${{ jobs.set-version.outputs.user-tenant-management-version }}
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -27,12 +33,23 @@ env:
   DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+  FRONTEND: frontend
+  PARKING_GARAGES: parking-garages
+  PARKING_MANAGEMENT: parking-management
+  FACILITY_MANGEMENT: facility-management
+  DEFECT_MANAGEMENT: defect-management
+  USER_TENANT_MANAGEMENT: user-tenant-management
 
 jobs:
   set-version:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.set-output.outputs.version }}
+      frontend-version: ${{ steps.set-frontend.outputs.version }}
+      parking-garages-version: ${{ steps.set-parking-garages.outputs.version }}
+      parking-management-version: ${{ steps.set-parking-management.outputs.version }}
+      facility-management-version: ${{ steps.set-facility-management.outputs.version }}
+      defect-management-version: ${{ steps.set-defect-management.outputs.version }}
+      user-tenant-management-version: ${{ steps.set-user-tenant-management.outputs.version }}
     steps:
       - name: Authenticate to Google Cloud
         run: |
@@ -47,36 +64,57 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Get current version of docker file
-        id: set-output
+      - name: Get current version of frontend docker file
+        id: set-frontend
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
-
+          VERSION=$(gcloud container images list-tags ${{ env.FRONTEND}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
           NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+
           echo "New Version: $NEW_VERSION"
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-          echo "::set-output name=version::$NEW_VERSION"
+      - name: Get current version of docker file
+        id: set-parking-garages
+        run: |
+          VERSION=$(gcloud container images list-tags ${{ env.PARKING_GARAGES}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+
+          echo "New Version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Get current version of parking-management docker file
+        id: set-parking-management
+        run: |
+          VERSION=$(gcloud container images list-tags ${{ env.PARKING_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+
+          echo "New Version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Get current version of defect-management docker file
+        id: set-defect-management
+        run: |
+          VERSION=$(gcloud container images list-tags ${{ env.DEFECT_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+
+          echo "New Version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+     
+      - name: Get current version of facility-management docker file
+        id: set-facility-management
+        run: |
+          VERSION=$(gcloud container images list-tags ${{ env.FACILITY_MANGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+
+          echo "New Version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
 
-      # - name: Read Version from File
-      #   id: read-version
-      #   run: echo "version=$(cat version.txt)" >> $GITHUB_ENV
+      - name: Get current version of user-tenant-management docker file
+        id: set-user-tenant-management
+        run: |
+          VERSION=$(gcloud container images list-tags ${{ env.USER_TENANT_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
 
-      # - name: Increment Version
-      #   id: set-output
-      #   run: |
-      #     current_version=$(cat version.txt)
-      #     new_version=$(echo $current_version | awk -F. '{print $1"."$2"."$3+1}')
-      #     echo "New Version: $new_version"
-      #     echo "$new_version" > version.txt
-      #     echo "version=$new_version" >> $GITHUB_ENV
-      #     echo "::set-output name=version::$new_version"
-
-      # - name: Commit Updated Version
-      #   run: |
-      #     git config user.name "GitHub Actions"
-      #     git config user.email "actions@github.com"
-      #     git add version.txt
-      #     git commit -m "Bump version to ${{ steps.set-output.outputs.version }}"
-      #     git push origin ${{ inputs.branch }}
+          echo "New Version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
