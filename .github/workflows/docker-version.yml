@@ -26,7 +26,7 @@ on:
         required: false
         
 env:
-  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}
+  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
   FRONTEND: frontend
@@ -63,7 +63,7 @@ jobs:
       - name: Get current version of frontend docker file
         id: set-frontend
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.FRONTEND}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.FRONTEND}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
           NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
 
           echo "New Version: $NEW_VERSION"
@@ -72,7 +72,7 @@ jobs:
       - name: Get current version of docker file
         id: set-parking-garages
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.PARKING_GARAGES}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_GARAGES}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
           NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
 
           echo "New Version: $NEW_VERSION"
@@ -81,7 +81,7 @@ jobs:
       - name: Get current version of parking-management docker file
         id: set-parking-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.PARKING_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
           NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
 
           echo "New Version: $NEW_VERSION"
@@ -90,7 +90,7 @@ jobs:
       - name: Get current version of defect-management docker file
         id: set-defect-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DEFECT_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.DEFECT_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
           NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
 
           echo "New Version: $NEW_VERSION"
@@ -99,7 +99,7 @@ jobs:
       - name: Get current version of facility-management docker file
         id: set-facility-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.FACILITY_MANGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.FACILITY_MANGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
           NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
 
           echo "New Version: $NEW_VERSION"
@@ -109,7 +109,7 @@ jobs:
       - name: Get current version of user-tenant-management docker file
         id: set-user-tenant-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.USER_TENANT_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.USER_TENANT_MANAGEMENT}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
           NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
 
           echo "New Version: $NEW_VERSION"
