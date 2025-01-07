@@ -28,12 +28,24 @@ on:
         required: false
 
 env:
-  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}:${{ inputs.version }}
+  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
 
 jobs:
+
+  set-new-version:
+    uses: msi-cad-vw/workflows/.github/workflows/docker-version.yml@main
+    with:
+      service: ${{ inputs.service }}
+
+    secrets:
+      GC_SERVICE_ACCOUNT: ${{ secrets.GC_STAGING_SERVICE_ACCOUNT }}
+      GC_SERVICE_ACCOUNT_SECRET: ${{ secrets.GC_STAGING_SERVICE_ACCOUNT_SECRET }}
+      GC_PROJECT_ID: ${{ secrets.GC_STAGING_PROJECT_ID }}
+
   build:
+    needs: [set-new-version]
     runs-on: ubuntu-latest
     steps:
       - name: Authenticate to Google Cloud
@@ -62,14 +74,12 @@ jobs:
 
           npm install
           npm run build
-        env:
-          REACT_APP_MY_SECRET: ${{ secrets.MY_SECRET }}
       
       - name: Build Docker Image
-        run: docker build --tag ${{ inputs.service }}:${{ inputs.version }} --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
+        run: docker build --tag ${{ inputs.service }}:${{ needs.set-new-version.outputs.version }} --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
 
       - name: Tag Docker image
-        run: docker tag ${{ inputs.service }}:${{ inputs.version }} ${{ env.DOCKER_IMG_PATH }}
+        run: docker tag ${{ inputs.service }}:${{ needs.set-new-version.outputs.version }} ${{ env.DOCKER_IMG_PATH }}:${{ needs.set-new-version.outputs.version }}
 
       - name: Push Docker Image
-        run: docker push ${{ env.DOCKER_IMG_PATH }}
+        run: docker push ${{ env.DOCKER_IMG_PATH }}:${{ needs.set-new-version.outputs.version }}

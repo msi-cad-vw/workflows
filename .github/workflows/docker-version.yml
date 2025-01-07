@@ -4,17 +4,17 @@ on:
   workflow_call:
     outputs:
       frontend-version:
-        value: ${{ jobs.set-version.outputs.frontend-version }}
+        value: ${{ jobs.get-version.outputs.frontend-version }}
       parking-garages-version:
-          value: ${{ jobs.set-version.outputs.parking-garages-version }}
+          value: ${{ jobs.get-version.outputs.parking-garages-version }}
       parking-management-version:
-          value: ${{ jobs.set-version.outputs.parking-management-version }}
+          value: ${{ jobs.get-version.outputs.parking-management-version }}
       facility-management-version:
-          value: ${{ jobs.set-version.outputs.facility-management-version }}
+          value: ${{ jobs.get-version.outputs.facility-management-version }}
       defect-management-version:
-          value: ${{ jobs.set-version.outputs.defect-management-version }}
+          value: ${{ jobs.get-version.outputs.defect-management-version }}
       user-tenant-management-version:
-          value: ${{ jobs.set-version.outputs.user-tenant-management-version }}
+          value: ${{ jobs.get-version.outputs.user-tenant-management-version }}
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -39,7 +39,7 @@ env:
   DEFAULT_VERSION: 1.0.0
 
 jobs:
-  set-version:
+  get-version:
     runs-on: ubuntu-latest
     outputs:
       frontend-version: ${{ steps.set-frontend.outputs.version }}
@@ -66,77 +66,34 @@ jobs:
         id: set-frontend
         run: |
           VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.FRONTEND}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
-          if [ "$VERSION" != "latest" ]; then
-            NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          else
-            NEW_VERSION=${{env.DEFAULT_VERSION}}
-          fi
-
-          echo "New Version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of docker file
         id: set-parking-garages
         run: |
           VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_GARAGES}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
-          if [ "$VERSION" != "latest" ]; then
-            NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          else
-            NEW_VERSION=${{env.DEFAULT_VERSION}}
-          fi
-
-          echo "New Version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of parking-management docker file
         id: set-parking-management
         run: |
           VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
-          if [ "$VERSION" != "latest" ]; then
-            NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          else
-            NEW_VERSION=${{env.DEFAULT_VERSION}}
-          fi
-
-          echo "New Version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of defect-management docker file
         id: set-defect-management
         run: |
           VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.DEFECT_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
-          if [ "$VERSION" != "latest" ]; then
-            NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          else
-            NEW_VERSION=${{env.DEFAULT_VERSION}}
-          fi
-
-          echo "New Version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
      
       - name: Get current version of facility-management docker file
         id: set-facility-management
         run: |
           VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.FACILITY_MANGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
-          if [ "$VERSION" != "latest" ]; then
-            NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          else
-            NEW_VERSION=${{env.DEFAULT_VERSION}}
-          fi
-
-          echo "New Version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of user-tenant-management docker file
         id: set-user-tenant-management
         run: |
           VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.USER_TENANT_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
-          if [ "$VERSION" != "latest" ]; then
-            NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          else
-            NEW_VERSION=${{env.DEFAULT_VERSION}}
-          fi
-
-          echo "New Version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,58 @@
+name: Start Application and Cluster
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.set-version.outputs.version }}
+    inputs:
+      service:
+        required: true
+        type: string
+    secrets:
+      GC_SERVICE_ACCOUNT:
+        required: true
+      GC_SERVICE_ACCOUNT_SECRET:
+        required: true
+      GC_PROJECT_ID:
+        required: true
+      REACT_JS_ENV:
+        required: false
+        
+env:
+  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/
+  GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+  DEFAULT_VERSION: 1.0.0
+
+jobs:
+  set-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+    steps:
+      - name: Authenticate to Google Cloud
+        run: |
+          echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account \
+            "${{ secrets.GC_SERVICE_ACCOUNT_EMAIL }}" --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          gcloud config set project ${{ secrets.GC_PROJECT_ID }}
+      
+      - name: Docker auth
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+      
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Get current version of frontend docker file
+        id: set-version
+        run: |
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ inputs.service }} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          if [ "$VERSION" != "latest" ]; then
+            NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+          else
+            NEW_VERSION=${{env.DEFAULT_VERSION}}
+          fi
+
+          echo "New Version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
