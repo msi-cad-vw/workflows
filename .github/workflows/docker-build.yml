@@ -14,6 +14,9 @@ on:
       service:
         required: true
         type: string
+      version:
+        required: true
+        type: string
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -25,7 +28,7 @@ on:
         required: false
 
 env:
-  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}:latest
+  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}:${{ inputs.version }}
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
 
@@ -59,12 +62,14 @@ jobs:
 
           npm install
           npm run build
+        env:
+          REACT_APP_MY_SECRET: ${{ secrets.MY_SECRET }}
       
       - name: Build Docker Image
-        run: docker build --tag ${{ inputs.service }}:latest --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
+        run: docker build --tag ${{ inputs.service }}:${{ inputs.version }} --file ${{ inputs.dockerfile }} ${{ inputs.docker_build_path }}
 
       - name: Tag Docker image
-        run: docker tag ${{ inputs.service }}:latest ${{ env.DOCKER_IMG_PATH }}
+        run: docker tag ${{ inputs.service }}:${{ inputs.version }} ${{ env.DOCKER_IMG_PATH }}
 
       - name: Push Docker Image
         run: docker push ${{ env.DOCKER_IMG_PATH }}
