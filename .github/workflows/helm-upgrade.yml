@@ -15,6 +15,9 @@ on:
         required: false
         type: string
         default: msi-cad-vw-bucket
+      version:
+        required: true
+        type: string
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -96,7 +99,7 @@ jobs:
     
     - name: Upgrade services with helm - Frontend and Gateway
       run: |
-        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }} 
         helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
         
     - name: Upgrade Authentication
