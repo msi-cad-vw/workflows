@@ -14,9 +14,6 @@ on:
       service:
         required: true
         type: string
-      version:
-        required: true
-        type: string
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true
@@ -35,7 +32,7 @@ env:
 jobs:
 
   set-new-version:
-    uses: msi-cad-vw/workflows/.github/workflows/docker-version.yml@main
+    uses: msi-cad-vw/workflows/.github/workflows/docker-set-version.yml@main
     with:
       service: ${{ inputs.service }}
 
