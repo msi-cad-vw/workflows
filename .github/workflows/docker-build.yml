@@ -37,9 +37,9 @@ jobs:
       service: ${{ inputs.service }}
 
     secrets:
-      GC_SERVICE_ACCOUNT: ${{ secrets.GC_STAGING_SERVICE_ACCOUNT }}
-      GC_SERVICE_ACCOUNT_SECRET: ${{ secrets.GC_STAGING_SERVICE_ACCOUNT_SECRET }}
-      GC_PROJECT_ID: ${{ secrets.GC_STAGING_PROJECT_ID }}
+      GC_SERVICE_ACCOUNT: ${{ secrets.GC_SERVICE_ACCOUNT }}
+      GC_SERVICE_ACCOUNT_SECRET: ${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}
+      GC_PROJECT_ID: ${{ secrets.GC_PROJECT_ID }}
 
   build:
     needs: [set-new-version]
