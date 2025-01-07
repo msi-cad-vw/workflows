@@ -6,13 +6,25 @@ on:
       branch:
         required: true
         type: string
+      service:
+        required: true
+        type: string
     outputs:
       version:
         description: "The incremented version number"
         value: ${{ jobs.set-version.outputs.version }}
-
+    secrets:
+      GC_SERVICE_ACCOUNT:
+        required: true
+      GC_SERVICE_ACCOUNT_SECRET:
+        required: true
+      GC_PROJECT_ID:
+        required: true
+      REACT_JS_ENV:
+        required: false
+        
 env:
-  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}:${{ inputs.version }}
+  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
 
