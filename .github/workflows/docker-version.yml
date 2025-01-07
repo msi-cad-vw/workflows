@@ -1,0 +1,70 @@
+name: Start Application and Cluster
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+    outputs:
+      version:
+        description: "The incremented version number"
+        value: ${{ jobs.set-version.outputs.version }}
+
+env:
+  DOCKER_IMG_PATH: europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/docker-repo/${{ inputs.service }}:${{ inputs.version }}
+  GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+
+jobs:
+  set-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set-output.outputs.version }}
+    steps:
+      - name: Authenticate to Google Cloud
+        run: |
+          echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account \
+            "${{ secrets.GC_SERVICE_ACCOUNT_EMAIL }}" --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          gcloud config set project ${{ secrets.GC_PROJECT_ID }}
+      
+      - name: Docker auth
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+      
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Get current version of docker file
+        id: set-output
+        run: |
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH}} | head -n 2 | grep -oP '\b\d+\.\d+\.\d+\b')
+
+          NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
+          echo "New Version: $NEW_VERSION"
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+          echo "::set-output name=version::$NEW_VERSION"
+
+
+      # - name: Read Version from File
+      #   id: read-version
+      #   run: echo "version=$(cat version.txt)" >> $GITHUB_ENV
+
+      # - name: Increment Version
+      #   id: set-output
+      #   run: |
+      #     current_version=$(cat version.txt)
+      #     new_version=$(echo $current_version | awk -F. '{print $1"."$2"."$3+1}')
+      #     echo "New Version: $new_version"
+      #     echo "$new_version" > version.txt
+      #     echo "version=$new_version" >> $GITHUB_ENV
+      #     echo "::set-output name=version::$new_version"
+
+      # - name: Commit Updated Version
+      #   run: |
+      #     git config user.name "GitHub Actions"
+      #     git config user.email "actions@github.com"
+      #     git add version.txt
+      #     git commit -m "Bump version to ${{ steps.set-output.outputs.version }}"
+      #     git push origin ${{ inputs.branch }}
