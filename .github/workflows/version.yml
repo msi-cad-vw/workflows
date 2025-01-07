@@ -6,11 +6,14 @@ on:
       branch:
         required: true
         type: string
+    outputs:
+      version:
+        description: "The incremented version number"
+        value: ${{ jobs.set-version.outputs.version }}
 
 env:
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
-
 
 jobs:
   set-version:
