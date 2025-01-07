@@ -2,10 +2,6 @@ name: Start Application and Cluster
 
 on:
   workflow_call:
-    inputs:
-      branch:
-        required: true
-        type: string
     outputs:
       frontend-version:
         value: ${{ jobs.set-version.outputs.frontend-version }}
