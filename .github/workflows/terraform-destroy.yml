@@ -65,6 +65,7 @@ jobs:
       run: terraform init -migrate-state
 
     - name: Delete not used keys
+      continue-on-error: true
       run: |
         for key in $(gcloud iam service-accounts keys list --iam-account ${{ env.SERVICE_ACCOUNT_EMAIL }} --format="value(KEY_ID)"); do
           if [ "$key" != "${{inputs.key_id}}" ]; then
