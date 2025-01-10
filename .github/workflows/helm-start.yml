@@ -123,6 +123,7 @@ jobs:
 
     # Create secrets and keys
     - name: Get Key and create it for each namespace
+      id: key
       continue-on-error: true 
       run: |
         gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
@@ -135,6 +136,7 @@ jobs:
         done
 
     - name: Upgrade services
+      if: steps.key.outcome == 'success'
       run: |
         helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
 
@@ -159,4 +161,17 @@ jobs:
             --set parkingGarages.version=${{ inputs.parking-garages-version }} \
             --set facilityManagement.version=${{ inputs.facility-management-version }} \
             --set defectManagement.version=${{ inputs.defect-management-version }}
+        done
+
+    # Create secrets and keys
+    - name: Get Key and create it for each namespace
+      continue-on-error: true 
+      run: |
+        gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
+        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n authentication
+
+        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
+        tenants=$(jq -r '.[].name' tenants.json)
+        for tenant in $tenants; do
+          kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n $tenant
         done
