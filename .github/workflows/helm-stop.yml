@@ -1,0 +1,83 @@
+name: Start Services with Helm
+on:
+  workflow_call:
+    inputs:
+      cluster: 
+        required: false
+        type: string
+        default: msi-cad-vw-cluster
+      database:
+        required: false
+        type: string
+        default: msi-cad-vw-database
+      bucket:
+        required: false
+        type: string
+        default: msi-cad-vw-bucket
+
+    secrets:
+      GC_SERVICE_ACCOUNT:
+        required: true
+      GC_SERVICE_ACCOUNT_SECRET:
+        required: true
+      GC_PROJECT_ID:
+        required: true
+      GC_BACKEND_BUCKET:
+        required: true
+
+env:
+  HELM_CHART_PATH: oci://europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/helm-repo
+  GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+  REGION: europe-west1-c 
+
+jobs:
+  build:
+    name: Start Services
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      run: |
+        echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $GOOGLE_APPLICATION_CREDENTIALS
+        echo $SERVICE_ACCOUNT_EMAIL
+        gcloud auth activate-service-account $SERVICE_ACCOUNT_EMAIL --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+        gcloud config set project ${{ secrets.GC_PROJECT_ID }}
+
+    # Get the GKE credentials so we can deploy to the cluster
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
+      with:
+        cluster_name: ${{ inputs.cluster }}
+        location: ${{ env.REGION }}
+        project_id: ${{ secrets.GC_PROJECT_ID }}
+
+    - name: Download Tenants.json from Bucket and print tenants
+      run: |
+        gcloud storage cp gs://${{ secrets.GC_BACKEND_BUCKET }}/tenants.json tenants.json
+        tenants=$(jq -r '.[].name' tenants.json)
+        for tenant in $tenants; do
+          echo $tenant
+        done
+
+    - name: Start services with helm - Frontend and Gateway
+      continue-on-error: true
+      run: |
+        helm uninstall gateway
+        helm uninstall frontend 
+      
+    - name: Install Authentication
+      continue-on-error: true
+      run: |
+        helm uninstall authentication
+
+    - name:  Uninstall backend for each tenant with helm
+      run: |
+        tenants=$(jq -r '.[].name' tenants.json)
+        for tenant in $tenants; do
+          helm uninstall parkspace-$tenant
+        done
+

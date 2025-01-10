@@ -130,9 +130,12 @@ jobs:
         kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n authentication
 
         kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
+
         tenants=$(jq -r '.[].name' tenants.json)
+        echo $tenants
         for tenant in $tenants; do
           kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n $tenant
+          echo $tenant
         done
 
     - name: Upgrade services
@@ -171,7 +174,10 @@ jobs:
         kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n authentication
 
         kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
+
         tenants=$(jq -r '.[].name' tenants.json)
+        echo $tenants
         for tenant in $tenants; do
           kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n $tenant
+          echo $tenant
         done
