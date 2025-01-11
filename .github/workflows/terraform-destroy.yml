@@ -8,9 +8,8 @@ on:
         type: string
         default: ./terraform/startup
       key_id:
-        required: false
+        required: true
         type: string
-        default: 1900ba61cb6081c6326afcfa624ad79b57d8fd48
     secrets:
       GC_SERVICE_ACCOUNT:
         required: true

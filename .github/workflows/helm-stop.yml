@@ -1,4 +1,4 @@
-name: Start Services with Helm
+name: Uninstall all Services with helm
 on:
   workflow_call:
     inputs:
@@ -32,8 +32,8 @@ env:
   REGION: europe-west1-c 
 
 jobs:
-  build:
-    name: Start Services
+  delete:
+    name: Uninstall
     runs-on: ubuntu-latest
 
     steps:
@@ -63,13 +63,13 @@ jobs:
           echo $tenant
         done
 
-    - name: Start services with helm - Frontend and Gateway
+    - name: Uninstall Frontend and Gateway
       continue-on-error: true
       run: |
         helm uninstall gateway
         helm uninstall frontend 
       
-    - name: Install Authentication
+    - name: Uninstall Authentication
       continue-on-error: true
       run: |
         helm uninstall authentication
