@@ -56,4 +56,4 @@ jobs:
       run: terraform apply -auto-approve -var="project=${{ secrets.GC_PROJECT_ID }}"  -var="backend_bucket=${{ secrets.GC_BACKEND_BUCKET }}"
 
     - name: Terraform Init - Migrate state
-      run: yes | terraform init -migrate-state
+      run: terraform init
