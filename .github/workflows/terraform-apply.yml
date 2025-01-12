@@ -46,8 +46,8 @@ jobs:
         gcloud config set project ${{ secrets.GC_PROJECT_ID }}
 
     - name: Terraform Init - Migrate state
-      # run: terraform init -migrate-state
-      run: terraform init
+      run: terraform init -migrate-state
+      # run: terraform init
 
     - name: Terraform Plan 
       run: terraform plan -var="project=${{ secrets.GC_PROJECT_ID }}"  -var="backend_bucket=${{ secrets.GC_BACKEND_BUCKET }}"

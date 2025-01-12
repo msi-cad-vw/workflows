@@ -65,7 +65,7 @@ jobs:
       - name: Get current version of frontend docker file
         id: set-frontend
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.FRONTEND}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          VERSION=$(gcloud container images list-tags "${{ env.DOCKER_IMG_PATH }}${{ env.FRONTEND }}" 2>/dev/null | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || VERSION="$DEFAULT_VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of docker file
