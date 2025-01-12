@@ -47,7 +47,7 @@ jobs:
       - name: Get current version of frontend docker file
         id: set-version
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ inputs.service }} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ inputs.service }} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || VERSION="$DEFAULT_VERSION"
           if [ "$VERSION" != "latest" ]; then
             NEW_VERSION=$(echo $VERSION | awk -F. '{print $1"."$2"."$3+1}')
           else

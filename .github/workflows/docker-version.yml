@@ -71,29 +71,29 @@ jobs:
       - name: Get current version of docker file
         id: set-parking-garages
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_GARAGES}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_GARAGES}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || VERSION="$DEFAULT_VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of parking-management docker file
         id: set-parking-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.PARKING_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || VERSION="$DEFAULT_VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of defect-management docker file
         id: set-defect-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.DEFECT_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.DEFECT_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || VERSION="$DEFAULT_VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
      
       - name: Get current version of facility-management docker file
         id: set-facility-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.FACILITY_MANGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.FACILITY_MANGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || VERSION="$DEFAULT_VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get current version of user-tenant-management docker file
         id: set-user-tenant-management
         run: |
-          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.USER_TENANT_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b')
+          VERSION=$(gcloud container images list-tags ${{ env.DOCKER_IMG_PATH }}${{ env.USER_TENANT_MANAGEMENT}} | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || VERSION="$DEFAULT_VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
