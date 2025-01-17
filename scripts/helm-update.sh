@@ -37,13 +37,13 @@ get_version() {
   local service_name=$1
   local version
 
-  version=$(gcloud container images list-tags "${DOCKER_IMG_PATH}${service_name}" | head -n 3 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || version="$DEFAULT_VERSION"
-  # echo "$version"
+  version=$(gcloud container images list-tags "${DOCKER_IMG_PATH}${service_name}" | head -n 2 | grep -oP '\b(latest|\d+\.\d+\.\d+)\b') || version="$DEFAULT_VERSION"
+  echo "$version"
 
-  echo "2.0.1"
+  # echo "2.0.1"
 }
 
-echo $(gcloud container images list-tags "${DOCKER_IMG_PATH}${FRONTEND}" | head -n 3)
+echo $(gcloud container images list-tags "${DOCKER_IMG_PATH}${FRONTEND}" | head -n 2)
 
 # Get versions for all services
 FRONTEND_VERSION=$(get_version "$PARKING_GARAGES")
@@ -85,24 +85,29 @@ helm install authentication "${HELM_CHART_PATH}/authentication/helm" \
 jq -c '.[]' tenants.json | while read -r entry; do
   tenant=$(echo "$entry" | jq -r '.name')
   replicas=$(echo "$entry" | jq -r '.replicas')
+  maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
   maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
   maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+  averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
 
-  helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
-    --set namespace=$tenant \
-    --set resources.database=${{inputs.database}} \
-    --set resources.bucket=${{ inputs.bucket }} \
-    --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-    --set parkingManagement.version=${{ inputs.parking-management-version }} \
-    --set parkingGarages.version=${{ inputs.parking-garages-version }} \
-    --set facilityManagement.version=${{ inputs.facility-management-version }} \
-    --set defectManagement.version=${{ inputs.defect-management-version }}
-    --set replicaCount=$replicas
-    --set replicaCount=$replicas
-    --set rollingUpdate.maxUnavailable=$maxUnavailable
+  helm install parkspace-$tenant ${HELM_CHART_PATH}/backend/helm \
+    --set namespace="$tenant" \
+    --set resources.database="$DATABASE" \
+    --set resources.bucket="$BUCKET" \
+    --set googleProject.name="$GC_PROJECT_ID" \
+    --set parkingManagement.version="$(get_version parking-management)" \
+    --set parkingGarages.version="$(get_version parking-garages)" \
+    --set facilityManagement.version="$(get_version facility-management)" \
+    --set defectManagement.version="$(get_version defect-management)" \
+    --set replicaCount=$replicas  \
+    --set scaling.averageUtilization=$averageUtilization \
+    --set scaling.maxReplicas=$maxReplicas \
+    --set scaling.memoryLimit=$maxMemory \
+    --set scaling.cpuLimit=$maxCPU \
+    --set rollingUpdate.maxUnavailable=$maxUnavailable \
     --set rollingUpdate.maxSurge=$maxSurge
   
-  echo "Executing for $tenant with $replicas replicas"
+  echo "Executing for $tenant with $replicas, $maxReplicas, $maxUnavailable, $maxSurge"
   # Add your custom commands for each $name and $replicas here
 done
 
@@ -131,23 +136,31 @@ helm upgrade authentication "${HELM_CHART_PATH}/authentication/helm" \
 jq -c '.[]' tenants.json | while read -r entry; do
   tenant=$(echo "$entry" | jq -r '.name')
   replicas=$(echo "$entry" | jq -r '.replicas')
+  maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
   maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
   maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+  averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+  maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+  maxMemory=$(echo "$entry" | jq -r '.maxMemory')
 
-  helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
-    --set namespace=$tenant \
-    --set resources.database=${{inputs.database}} \
-    --set resources.bucket=${{ inputs.bucket }} \
-    --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-    --set parkingManagement.version=${{ inputs.parking-management-version }} \
-    --set parkingGarages.version=${{ inputs.parking-garages-version }} \
-    --set facilityManagement.version=${{ inputs.facility-management-version }} \
-    --set defectManagement.version=${{ inputs.defect-management-version }}
-    --set replicaCount=$replicas
-    --set rollingUpdate.maxUnavailable=$maxUnavailable
+  helm upgrade parkspace-$tenant $HELM_CHART_PATH/backend/helm \
+    --set namespace="$tenant" \
+    --set resources.database="$DATABASE" \
+    --set resources.bucket="$BUCKET" \
+    --set googleProject.name="$GC_PROJECT_ID" \
+    --set parkingManagement.version="$(get_version parking-management)" \
+    --set parkingGarages.version="$(get_version parking-garages)" \
+    --set facilityManagement.version="$(get_version facility-management)" \
+    --set defectManagement.version="$(get_version defect-management)" \
+    --set replicaCount=$replicas  \
+    --set scaling.averageUtilization=$averageUtilization \
+    --set scaling.maxReplicas=$maxReplicas \
+    --set scaling.memoryLimit=$maxMemory \
+    --set scaling.cpuLimit=$maxCPU \
+    --set rollingUpdate.maxUnavailable=$maxUnavailable \
     --set rollingUpdate.maxSurge=$maxSurge
   
-  echo "Executing for $tenant with $replicas replicas"
+  echo "Executing for $tenant with $replicas, $maxReplicas, $maxUnavailable, $maxSurge, $maxCPU, $maxMemory"
   # Add your custom commands for each $name and $replicas here
 done
 

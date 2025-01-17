@@ -13,7 +13,11 @@ on:
       restart:
         required: false
         type: boolean
-        default: true   
+        default: true
+      productive:
+        required: false
+        type: string
+        default: "true"
       database:
         required: false
         type: string
@@ -78,9 +82,28 @@ jobs:
     - name: Docker auth
       run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
 
+    - name: Download Tenants.json from Bucket and print tenants
+      run: |
+        gcloud storage cp gs://${{ secrets.GC_BACKEND_BUCKET }}/tenants.json tenants.json
+        tenants=$(jq -r '.[].name' tenants.json)
+        for tenant in $tenants; do
+          echo $tenant
+        done
+
     - name: Install service
       if: ${{ inputs.restart == true }}
       run: |
+        entry=$(jq '.[] | select(.name == "${{ inputs.name }}")' tenants.json)
+
+        tenant=$(echo "$entry" | jq -r '.name')
+        replicas=$(echo "$entry" | jq -r '.replicas')
+        maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
+        maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
+        maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+        averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+        maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+        maxMemory=$(echo "$entry" | jq -r '.maxMemory')
+
         helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm \
           --set namespace=enterprise/${{ inputs.name }} \
           --set resources.database=${{inputs.database}} \
@@ -89,7 +112,15 @@ jobs:
           --set parkingManagement.version=${{ inputs.parking-management-version }} \
           --set parkingGarages.version=${{ inputs.parking-garages-version }} \
           --set facilityManagement.version=${{ inputs.facility-management-version }} \
-          --set defectManagement.version=${{ inputs.defect-management-version }}
+          --set defectManagement.version=${{ inputs.defect-management-version }} \
+          --set productive=${{ inputs.productive }} \
+          --set replicaCount=$replicas  \
+          --set scaling.averageUtilization=$averageUtilization \
+          --set scaling.maxReplicas=$maxReplicas \
+          --set scaling.memoryLimit=$maxMemory \
+          --set scaling.cpuLimit=$maxCPU \
+          --set rollingUpdate.maxUnavailable=$maxUnavailable \
+          --set rollingUpdate.maxSurge=$maxSurge
 
     - name: Uninstall service
       if: ${{ inputs.restart == false }}
