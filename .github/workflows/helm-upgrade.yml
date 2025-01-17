@@ -11,6 +11,10 @@ on:
         required: false
         type: string
         default: msi-cad-vw-database
+      productive:
+        required: false
+        type: string
+        default: "true"
       bucket:
         required: false
         type: string
@@ -114,11 +118,14 @@ jobs:
     
     - name: Upgrade services with helm - Frontend and Gateway
       run: |
-        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set productive=${{ inputs.productive }}
 
         helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-          --set frontend.version=${{ inputs.frontend-version }}
+          --set frontend.version=${{ inputs.frontend-version }} \
+          --set productive=${{ inputs.productive }}
 
     - name: Upgrade Authentication
       run: |
@@ -126,12 +133,21 @@ jobs:
           --set resources.database=${{ inputs.database }} \
           --set resources.bucket=${{ inputs.bucket }} \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }}
+          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }} \
+          --set productive=${{ inputs.productive }}
 
     - name: Start backend for each tenant with helm
       run: |
-        tenants=$(jq -r '.[].name' tenants.json)
-        for tenant in $tenants; do
+        jq -c '.[]' tenants.json | while read -r entry; do
+          tenant=$(echo "$entry" | jq -r '.name')
+          replicas=$(echo "$entry" | jq -r '.replicas')
+          maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
+          maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
+          maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+          averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+          maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+          maxMemory=$(echo "$entry" | jq -r '.maxMemory')
+
           helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
             --set namespace=$tenant \
             --set resources.database=${{inputs.database}} \
@@ -140,7 +156,18 @@ jobs:
             --set parkingManagement.version=${{ inputs.parking-management-version }} \
             --set parkingGarages.version=${{ inputs.parking-garages-version }} \
             --set facilityManagement.version=${{ inputs.facility-management-version }} \
-            --set defectManagement.version=${{ inputs.defect-management-version }}
+            --set defectManagement.version=${{ inputs.defect-management-version }} \
+            --set productive=${{ inputs.productive }} \
+            --set replicaCount=$replicas  \
+            --set scaling.averageUtilization=$averageUtilization \
+            --set scaling.maxReplicas=$maxReplicas \
+            --set scaling.memoryLimit=$maxMemory \
+            --set scaling.cpuLimit=$maxCPU \
+            --set rollingUpdate.maxUnavailable=$maxUnavailable \
+            --set rollingUpdate.maxSurge=$maxSurge
+          
+          echo "Executing for $tenant with $replicas replicas"
+          # Add your custom commands for each $name and $replicas here
         done
 
     - name: On failure

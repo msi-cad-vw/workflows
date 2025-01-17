@@ -39,7 +39,7 @@ if [ "$ACTION" == "create" ]; then
     echo "Name is already existing or not valid"
     exit 1
   else
-    jq ". += [{\"name\": \"$TENANT_ID\", \"data\": \"new-data\"}]" tenants.json > tenants_new.json
+    jq ". += [{\"name\": \"$TENANT_ID\", \"replicas\": \"2\", \"maxReplicas\": \"5\", \"maxUnavailable\": \"0\", \"maxSurge\": \"1\", \"averageUtilization\": \"50%\"}]" tenants.json > tenants_new.json
     gcloud storage cp tenants_new.json gs://$GC_BACKEND_BUCKET/tenants.json
   fi
 
@@ -63,3 +63,14 @@ fi
 
 # Example placeholder for invoking Helm
 # helm upgrade --install ...
+
+
+jq '. += [,{ \
+\"name\": \"miau\", \
+"replicas": "2", \
+"maxReplicas": "3", \
+"maxUnavailable": "0", \
+"maxSurge": "1", \
+"averageUtilization": "50", \
+"maxCPU": "100m", \
+"maxMemory": "150Mi"}]' tenants_new.json > tenants_miau.json

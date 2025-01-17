@@ -14,6 +14,10 @@ on:
         required: false
         type: string
         default: msi-cad-vw-bucket
+      productive:
+        required: false
+        type: string
+        default: "true"
       frontend-version:
         required: true
         type: string
@@ -41,6 +45,10 @@ on:
       GC_PROJECT_ID:
         required: true
       GC_BACKEND_BUCKET:
+        required: true
+      PRIVATE_KEY:
+        required: true
+      CERT_FILE:
         required: true
 
 env:
@@ -87,13 +95,23 @@ jobs:
     - name: Get version
       run: helm version
 
-    - name: Start services with helm - Frontend and Gateway
+    - name: Setup Gateway
       continue-on-error: true
       run: |
-        helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        echo "${{ secrets.CERT_FILE }}" > cert-file.pem
+        echo "${{ secrets.PRIVATE_KEY }}" > private-key.pem
+        kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
+        helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set productive=${{ inputs.productive }}
+
+    - name: Setup Frontend
+      continue-on-error: true
+      run: |
         helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-          --set frontend.version=${{ inputs.frontend-version }}
+          --set frontend.version=${{ inputs.frontend-version }} \
+          --set productive=${{ inputs.productive }}
       
     - name: Install Authentication
       continue-on-error: true
@@ -102,14 +120,23 @@ jobs:
           --set resources.database=${{inputs.database}} \
           --set resources.bucket=${{ inputs.bucket }} \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }}
+          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }} \
+          --set productive=${{ inputs.productive }}
 
     # Deploy the Docker image to the GKE cluster
     - name: Start backend for each tenant with helm
       continue-on-error: true 
       run: |
-        tenants=$(jq -r '.[].name' tenants.json)
-        for tenant in $tenants; do
+        jq -c '.[]' tenants.json | while read -r entry; do
+          tenant=$(echo "$entry" | jq -r '.name')
+          replicas=$(echo "$entry" | jq -r '.replicas')
+          maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
+          maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
+          maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+          averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+          maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+          maxMemory=$(echo "$entry" | jq -r '.maxMemory')
+
           helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
             --set namespace=$tenant \
             --set resources.database=${{inputs.database}} \
@@ -118,7 +145,18 @@ jobs:
             --set parkingManagement.version=${{ inputs.parking-management-version }} \
             --set parkingGarages.version=${{ inputs.parking-garages-version }} \
             --set facilityManagement.version=${{ inputs.facility-management-version }} \
-            --set defectManagement.version=${{ inputs.defect-management-version }}
+            --set defectManagement.version=${{ inputs.defect-management-version }} \
+            --set productive=${{ inputs.productive }} \
+            --set replicaCount=$replicas  \
+            --set scaling.averageUtilization=$averageUtilization \
+            --set scaling.maxReplicas=$maxReplicas \
+            --set scaling.memoryLimit=$maxMemory \
+            --set scaling.cpuLimit=$maxCPU \
+            --set rollingUpdate.maxUnavailable=$maxUnavailable \
+            --set rollingUpdate.maxSurge=$maxSurge
+          
+          echo "Executing for $tenant with $replicas replicas"
+          # Add your custom commands for each $name and $replicas here
         done
 
     # Create secrets and keys
@@ -141,20 +179,32 @@ jobs:
     - name: Upgrade services
       if: steps.key.outcome == 'success'
       run: |
-        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm --set googleProject.name=${{ secrets.GC_PROJECT_ID }}
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set productive=${{ inputs.productive }}
 
         helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-          --set frontend.version=${{ inputs.frontend-version }}
+          --set frontend.version=${{ inputs.frontend-version }} \
+          --set productive=${{ inputs.productive }}
 
         helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm \
           --set resources.database=${{inputs.database}} \
           --set resources.bucket=${{ inputs.bucket }} \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
-          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }}
+          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }} \
+          --set productive=${{ inputs.productive }}
 
-        tenants=$(jq -r '.[].name' tenants.json)
-        for tenant in $tenants; do
+        jq -c '.[]' tenants.json | while read -r entry; do
+          tenant=$(echo "$entry" | jq -r '.name')
+          replicas=$(echo "$entry" | jq -r '.replicas')
+          maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
+          maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
+          maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+          averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+          maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+          maxMemory=$(echo "$entry" | jq -r '.maxMemory')
+
           helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
             --set namespace=$tenant \
             --set resources.database=${{inputs.database}} \
@@ -163,7 +213,18 @@ jobs:
             --set parkingManagement.version=${{ inputs.parking-management-version }} \
             --set parkingGarages.version=${{ inputs.parking-garages-version }} \
             --set facilityManagement.version=${{ inputs.facility-management-version }} \
-            --set defectManagement.version=${{ inputs.defect-management-version }}
+            --set defectManagement.version=${{ inputs.defect-management-version }} \
+            --set productive=${{ inputs.productive }} \
+            --set replicaCount=$replicas  \
+            --set scaling.averageUtilization=$averageUtilization \
+            --set scaling.maxReplicas=$maxReplicas \
+            --set scaling.memoryLimit=$maxMemory \
+            --set scaling.cpuLimit=$maxCPU \
+            --set rollingUpdate.maxUnavailable=$maxUnavailable \
+            --set rollingUpdate.maxSurge=$maxSurge
+          
+          echo "Executing for $tenant with $replicas replicas"
+          # Add your custom commands for each $name and $replicas here
         done
 
     # Create secrets and keys
