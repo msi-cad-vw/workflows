@@ -36,6 +36,9 @@ on:
       facility-management-version:
         required: true
         type: string
+      key_id:
+        required: true
+        type: string
 
     secrets:
       GC_SERVICE_ACCOUNT:
@@ -105,9 +108,12 @@ jobs:
     - name: Create https certificates
       id: https-certs
       run: | 
-        echo "${{ secrets.CERT_FILE }}" > cert-file.pem
-        echo "${{ secrets.PRIVATE_KEY }}" > private-key.pem
-        kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
+        echo ${{ secrets.CERT_FILE }} > cert-file.pem
+        echo ${{ secrets.PRIVATE_KEY }} > private-key.pem
+        cat cert-file.pem
+        cat private-key.pem
+
+    # kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
 
     - name: Setup Frontend
       continue-on-error: true
@@ -163,10 +169,36 @@ jobs:
           # Add your custom commands for each $name and $replicas here
         done
 
+
+    # TODO: Maybe change to universal key
+
+    # Continue on error, because a few keys cannot be deleted
+    - name: Delete existing secrets
+      continue-on-error: true 
+      run: |
+        kubectl delete secret gcp-sa-key -n authentication
+        kubectl delete secret gcp-sa-key -n frontend
+
+        tenants=$(jq -r '.[].name' tenants.json)
+        echo $tenants
+        for tenant in $tenants; do
+          kubectl delete secret gcp-sa-key -n $tenant
+          echo $tenant
+        done
+
+    # Continue on error, because error could be caused through a new tenant
+    - name: Delete not used keys
+      continue-on-error: true
+      run: |
+        for key in $(gcloud iam service-accounts keys list --iam-account ${{ env.SERVICE_ACCOUNT_EMAIL }} --format="value(KEY_ID)"); do
+          if [ "$key" != "${{ inputs.key_id}}" ]; then
+            gcloud iam service-accounts keys delete $key --iam-account ${{ env.SERVICE_ACCOUNT_EMAIL }} --quiet
+          fi
+        done
+
     # Create secrets and keys
     - name: Get Key and create it for each namespace
       id: key
-      continue-on-error: true 
       run: |
         gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
         kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n authentication
@@ -229,20 +261,4 @@ jobs:
           
           echo "Executing for $tenant with $replicas replicas"
           # Add your custom commands for each $name and $replicas here
-        done
-
-    # Create secrets and keys
-    - name: Get Key and create it for each namespace
-      continue-on-error: true 
-      run: |
-        gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
-        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n authentication
-
-        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
-
-        tenants=$(jq -r '.[].name' tenants.json)
-        echo $tenants
-        for tenant in $tenants; do
-          kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n $tenant
-          echo $tenant
         done

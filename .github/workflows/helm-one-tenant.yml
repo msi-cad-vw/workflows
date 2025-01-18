@@ -52,6 +52,7 @@ on:
 env:
   HELM_CHART_PATH: oci://europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/helm-repo
   GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  KEY_FILE: ${{ github.workspace }}/key.json
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
   REGION: europe-west1-c 
 
@@ -105,6 +106,47 @@ jobs:
         maxMemory=$(echo "$entry" | jq -r '.maxMemory')
 
         helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm \
+          --set namespace=${{ inputs.name }} \
+          --set resources.database=${{inputs.database}} \
+          --set resources.bucket=${{ inputs.bucket }} \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set parkingManagement.version=${{ inputs.parking-management-version }} \
+          --set parkingGarages.version=${{ inputs.parking-garages-version }} \
+          --set facilityManagement.version=${{ inputs.facility-management-version }} \
+          --set defectManagement.version=${{ inputs.defect-management-version }} \
+          --set productive=${{ inputs.productive }} \
+          --set replicaCount=$replicas  \
+          --set scaling.averageUtilization=$averageUtilization \
+          --set scaling.maxReplicas=$maxReplicas \
+          --set scaling.memoryLimit=$maxMemory \
+          --set scaling.cpuLimit=$maxCPU \
+          --set rollingUpdate.maxUnavailable=$maxUnavailable \
+          --set rollingUpdate.maxSurge=$maxSurge
+
+    - name: Update services
+      if: ${{ inputs.restart == true }}
+      id: key
+      run: |
+        echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $KEY_FILE
+        kubectl create secret generic gcp-sa-key --from-file=key.json=$KEY_FILE -n ${{ inputs.name }}       
+      
+    # gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
+
+    - name: Update services
+      if: ${{ inputs.restart == true  && steps.key.outcome == 'success'}}
+      run: |
+        entry=$(jq '.[] | select(.name == "${{ inputs.name }}")' tenants.json)
+
+        tenant=$(echo "$entry" | jq -r '.name')
+        replicas=$(echo "$entry" | jq -r '.replicas')
+        maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
+        maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
+        maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+        averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+        maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+        maxMemory=$(echo "$entry" | jq -r '.maxMemory')
+
+        helm update parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm \
           --set namespace=${{ inputs.name }} \
           --set resources.database=${{inputs.database}} \
           --set resources.bucket=${{ inputs.bucket }} \
