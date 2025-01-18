@@ -24,6 +24,8 @@ FACILITY_MANAGEMENT="facility-management"
 DEFECT_MANAGEMENT="defect-management"
 USER_TENANT_MANAGEMENT="user-tenant-management"
 
+productive="true"
+
 # Authenticate to Google Cloud
 echo "$GC_SERVICE_ACCOUNT_SECRET" | base64 --decode > "$GOOGLE_APPLICATION_CREDENTIALS"
 gcloud auth activate-service-account "$SERVICE_ACCOUNT_EMAIL" --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
@@ -69,17 +71,22 @@ gcloud storage cp "gs://${GC_BACKEND_BUCKET}/tenants.json" tenants.json
 tenants=$(jq -r '.[].name' tenants.json)
 
 # Deploy Frontend and Gateway
-helm install gateway "${HELM_CHART_PATH}/infrastructure/helm" --set googleProject.name="$GC_PROJECT_ID" || true
+helm install gateway "${HELM_CHART_PATH}/infrastructure/helm" \
+  --set googleProject.name="$GC_PROJECT_ID" \
+  --set productive="$productive"
+
 helm install frontend "${HELM_CHART_PATH}/frontend/helm" \
   --set googleProject.name="$GC_PROJECT_ID" \
-  --set frontend.version="$(get_version frontend)" || true
+  --set frontend.version="$(get_version frontend)" \
+  --set productive="$productive"
 
 # Deploy Authentication
 helm install authentication "${HELM_CHART_PATH}/authentication/helm" \
   --set resources.database="$DATABASE" \
   --set resources.bucket="$BUCKET" \
   --set googleProject.name="$GC_PROJECT_ID" \
-  --set userTenantManagement.version="$(get_version user-tenant-management)" || true
+  --set userTenantManagement.version="$(get_version user-tenant-management)" \
+  --set productive="$productive"
 
 # Deploy Backend for each tenant
 jq -c '.[]' tenants.json | while read -r entry; do
@@ -99,6 +106,7 @@ jq -c '.[]' tenants.json | while read -r entry; do
     --set parkingGarages.version="$(get_version parking-garages)" \
     --set facilityManagement.version="$(get_version facility-management)" \
     --set defectManagement.version="$(get_version defect-management)" \
+    --set productive="$productive" \
     --set replicaCount=$replicas  \
     --set scaling.averageUtilization=$averageUtilization \
     --set scaling.maxReplicas=$maxReplicas \
@@ -122,16 +130,21 @@ for tenant in $tenants; do
 done
 
 # Upgrade services
-helm upgrade gateway "${HELM_CHART_PATH}/infrastructure/helm" --set googleProject.name="$GC_PROJECT_ID"
+helm upgrade gateway "${HELM_CHART_PATH}/infrastructure/helm" \
+  --set googleProject.name="$GC_PROJECT_ID" \
+  --set productive="$productive"
+
 helm upgrade frontend "${HELM_CHART_PATH}/frontend/helm" \
   --set googleProject.name="$GC_PROJECT_ID" \
-  --set frontend.version="$(get_version frontend)"
+  --set frontend.version="$(get_version frontend)" \
+  --set productive="$productive"
 
 helm upgrade authentication "${HELM_CHART_PATH}/authentication/helm" \
   --set resources.database="$DATABASE" \
   --set resources.bucket="$BUCKET" \
   --set googleProject.name="$GC_PROJECT_ID" \
-  --set userTenantManagement.version="$(get_version user-tenant-management)"
+  --set userTenantManagement.version="$(get_version user-tenant-management)" \
+  --set productive="$productive"
 
 jq -c '.[]' tenants.json | while read -r entry; do
   tenant=$(echo "$entry" | jq -r '.name')
@@ -152,6 +165,7 @@ jq -c '.[]' tenants.json | while read -r entry; do
     --set parkingGarages.version="$(get_version parking-garages)" \
     --set facilityManagement.version="$(get_version facility-management)" \
     --set defectManagement.version="$(get_version defect-management)" \
+    --set productive="$productive" \
     --set replicaCount=$replicas  \
     --set scaling.averageUtilization=$averageUtilization \
     --set scaling.maxReplicas=$maxReplicas \

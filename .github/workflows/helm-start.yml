@@ -98,12 +98,16 @@ jobs:
     - name: Setup Gateway
       continue-on-error: true
       run: |
-        echo "${{ secrets.CERT_FILE }}" > cert-file.pem
-        echo "${{ secrets.PRIVATE_KEY }}" > private-key.pem
-        kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
         helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
           --set productive=${{ inputs.productive }}
+
+    - name: Create https certificates
+      id: https-certs
+      run: | 
+        echo "${{ secrets.CERT_FILE }}" > cert-file.pem
+        echo "${{ secrets.PRIVATE_KEY }}" > private-key.pem
+        kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
 
     - name: Setup Frontend
       continue-on-error: true
