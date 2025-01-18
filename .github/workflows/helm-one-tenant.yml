@@ -105,7 +105,7 @@ jobs:
         maxMemory=$(echo "$entry" | jq -r '.maxMemory')
 
         helm install parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm \
-          --set namespace=enterprise/${{ inputs.name }} \
+          --set namespace=${{ inputs.name }} \
           --set resources.database=${{inputs.database}} \
           --set resources.bucket=${{ inputs.bucket }} \
           --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
