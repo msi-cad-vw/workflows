@@ -146,7 +146,7 @@ jobs:
         maxCPU=$(echo "$entry" | jq -r '.maxCPU')
         maxMemory=$(echo "$entry" | jq -r '.maxMemory')
 
-        helm update parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm \
+        helm upgrade parkspace-${{ inputs.name }} ${{ env.HELM_CHART_PATH }}/backend/helm \
           --set namespace=${{ inputs.name }} \
           --set resources.database=${{inputs.database}} \
           --set resources.bucket=${{ inputs.bucket }} \
