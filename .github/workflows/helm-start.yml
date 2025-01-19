@@ -114,7 +114,7 @@ jobs:
         cat cert-file.pem
         cat private-key.pem
 
-    # kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
+        kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
 
     - name: Setup Frontend
       continue-on-error: true
