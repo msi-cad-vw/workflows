@@ -225,7 +225,9 @@ jobs:
         echo $tenants
 
         for tenant in $tenants; do
-          gcloud iam service-accounts keys create "key-${tenant}.json" --iam-account="${tenant}-sa@$GC_PROJECT_ID.iam.gserviceaccount.com"
+          echo key-${tenant}.json
+          echo $tenant-sa@$GC_PROJECT_ID.iam.gserviceaccount.com
+          gcloud iam service-accounts keys create key-$tenant.json --iam-account=$tenant-sa@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
           kubectl create secret generic gcp-sa-key --from-file=key.json="key-${tenant}.json" -n "$tenant"
           echo "Processed tenant: $tenant"
         done
