@@ -8,6 +8,7 @@ GC_SERVICE_ACCOUNT=$4
 GC_SERVICE_ACCOUNT_SECRET=$5
 GC_PROJECT_ID=$6
 GC_BACKEND_BUCKET=$7
+PRODUCTIVE=${3:true}
 
 # Environment Variables
 HELM_CHART_PATH="oci://europe-west1-docker.pkg.dev/${GC_PROJECT_ID}/helm-repo"
@@ -24,7 +25,9 @@ FACILITY_MANAGEMENT="facility-management"
 DEFECT_MANAGEMENT="defect-management"
 USER_TENANT_MANAGEMENT="user-tenant-management"
 
-productive="true"
+productive=$PRODUCTIVE
+
+echo $SERVICE_ACCOUNT_EMAIL
 
 # Authenticate to Google Cloud
 echo "$GC_SERVICE_ACCOUNT_SECRET" | base64 --decode > "$GOOGLE_APPLICATION_CREDENTIALS"

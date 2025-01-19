@@ -106,10 +106,11 @@ jobs:
           --set productive=${{ inputs.productive }}
 
     - name: Create https certificates
+      continue-on-error: true
       id: https-certs
       run: | 
-        echo ${{ secrets.CERT_FILE }} > cert-file.pem
-        echo ${{ secrets.PRIVATE_KEY }} > private-key.pem
+        echo "${{ secrets.CERT_FILE }}" > cert-file.pem
+        echo "${{ secrets.PRIVATE_KEY }}" > private-key.pem
         cat cert-file.pem
         cat private-key.pem
 
