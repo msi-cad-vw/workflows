@@ -18,7 +18,7 @@ on:
       bucket:
         required: false
         type: string
-        default: msi-cad-vw-bucket
+        default: msi-cad-vw-storagebucket
       frontend-version:
         required: true
         type: string
