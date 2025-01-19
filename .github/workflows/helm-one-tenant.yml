@@ -128,8 +128,11 @@ jobs:
       id: key
       run: |
         echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $KEY_FILE
-        kubectl create secret generic gcp-sa-key --from-file=key.json=$KEY_FILE -n ${{ inputs.name }}       
-      
+        kubectl create secret generic gcp-sa-key --from-file=key.json=$KEY_FILE -n ${{ inputs.name }}     
+
+        # gcloud iam service-accounts keys create key-${{ inputs.name }}.json --iam-account=${{ inputs.name }}-sa@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+        # kubectl create secret generic gcp-sa-key --from-file=key.json=key-${{ inputs.name }}.json -n ${{ inputs.name }}
+
     # gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
 
     - name: Update services
