@@ -60,6 +60,8 @@ jobs:
       - name: Create frontend env
         if: ${{ inputs.service == 'frontend' }}
         run: |
+          npm install
+
           cd app
           echo "${{ secrets.REACT_JS_ENV }}" > .env
           cat .env
@@ -68,6 +70,8 @@ jobs:
           while IFS='=' read -r name value; do
             export "$name=$value"
           done < .env
+
+          export CI=false
 
           npm install
           npm run build
