@@ -16,8 +16,8 @@ on:
         default: true
       productive:
         required: false
-        type: string
-        default: "true"
+        type: boolean
+        default: true
       database:
         required: false
         type: string

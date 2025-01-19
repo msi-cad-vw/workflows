@@ -1,0 +1,265 @@
+name: Start Services with Helm
+on:
+  workflow_call:
+    inputs:
+      cluster: 
+        required: false
+        type: string
+        default: msi-cad-vw-cluster
+      database:
+        required: false
+        type: string
+        default: msi-cad-vw-database
+      bucket:
+        required: false
+        type: string
+        default: msi-cad-vw-bucket
+      productive:
+        required: false
+        type: boolean
+        default: true
+      frontend-version:
+        required: true
+        type: string
+      parking-garages-version:
+        required: true
+        type: string
+      parking-management-version:
+        required: true
+        type: string
+      user-tenant-management-version:
+        required: true
+        type: string
+      defect-management-version:
+        required: true
+        type: string
+      facility-management-version:
+        required: true
+        type: string
+      key_id:
+        required: true
+        type: string
+
+    secrets:
+      GC_SERVICE_ACCOUNT:
+        required: true
+      GC_SERVICE_ACCOUNT_SECRET:
+        required: true
+      GC_PROJECT_ID:
+        required: true
+      GC_BACKEND_BUCKET:
+        required: true
+      PRIVATE_KEY:
+        required: true
+      CERT_FILE:
+        required: true
+
+env:
+  HELM_CHART_PATH: oci://europe-west1-docker.pkg.dev/${{ secrets.GC_PROJECT_ID  }}/helm-repo
+  GOOGLE_APPLICATION_CREDENTIALS:  ${{ github.workspace }}/${{ secrets.GC_SERVICE_ACCOUNT }}.json
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.GC_SERVICE_ACCOUNT }}@${{ secrets.GC_PROJECT_ID }}.iam.gserviceaccount.com
+  REGION: europe-west1-c 
+
+jobs:
+  build:
+    name: Start Services
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      run: |
+        echo "${{ secrets.GC_SERVICE_ACCOUNT_SECRET }}" | base64 --decode > $GOOGLE_APPLICATION_CREDENTIALS
+        echo $SERVICE_ACCOUNT_EMAIL
+        gcloud auth activate-service-account $SERVICE_ACCOUNT_EMAIL --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+        gcloud config set project ${{ secrets.GC_PROJECT_ID }}
+
+    # Get the GKE credentials so we can deploy to the cluster
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
+      with:
+        cluster_name: ${{ inputs.cluster }}
+        location: ${{ env.REGION }}
+        project_id: ${{ secrets.GC_PROJECT_ID }}
+
+    - name: Download Tenants.json from Bucket and print tenants
+      run: |
+        gcloud storage cp gs://${{ secrets.GC_BACKEND_BUCKET }}/tenants.json tenants.json
+        tenants=$(jq -r '.[].name' tenants.json)
+        for tenant in $tenants; do
+          echo $tenant
+        done
+
+    - name: Docker auth
+      run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+
+    - name: Get version
+      run: helm version
+
+    - name: Setup Gateway
+      continue-on-error: true
+      run: |
+        helm install gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set productive=${{ inputs.productive }}
+
+    - name: Create https certificates
+      continue-on-error: true
+      id: https-certs
+      run: | 
+        echo "${{ secrets.CERT_FILE }}" > cert-file.pem
+        echo "${{ secrets.PRIVATE_KEY }}" > private-key.pem
+        cat cert-file.pem
+        cat private-key.pem
+
+        kubectl create secret tls https-cert --cert=cert-file.pem --key=private-key.pem -n infra
+
+    - name: Setup Frontend
+      continue-on-error: true
+      run: |
+        helm install frontend ${{ env.HELM_CHART_PATH }}/frontend/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set frontend.version=${{ inputs.frontend-version }} \
+          --set productive=${{ inputs.productive }}
+      
+    - name: Install Authentication
+      continue-on-error: true
+      run: |
+        helm install authentication ${{ env.HELM_CHART_PATH }}/authentication/helm \
+          --set resources.database=${{inputs.database}} \
+          --set resources.bucket=${{ inputs.bucket }} \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }} \
+          --set productive=${{ inputs.productive }}
+
+    # Deploy the Docker image to the GKE cluster
+    - name: Start backend for each tenant with helm
+      continue-on-error: true 
+      run: |
+        jq -c '.[]' tenants.json | while read -r entry; do
+          tenant=$(echo "$entry" | jq -r '.name')
+          replicas=$(echo "$entry" | jq -r '.replicas')
+          maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
+          maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
+          maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+          averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+          maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+          maxMemory=$(echo "$entry" | jq -r '.maxMemory')
+
+          helm install parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
+            --set namespace=$tenant \
+            --set resources.database=${{inputs.database}} \
+            --set resources.bucket=${{ inputs.bucket }} \
+            --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+            --set parkingManagement.version=${{ inputs.parking-management-version }} \
+            --set parkingGarages.version=${{ inputs.parking-garages-version }} \
+            --set facilityManagement.version=${{ inputs.facility-management-version }} \
+            --set defectManagement.version=${{ inputs.defect-management-version }} \
+            --set productive=${{ inputs.productive }} \
+            --set replicaCount=$replicas  \
+            --set scaling.averageUtilization=$averageUtilization \
+            --set scaling.maxReplicas=$maxReplicas \
+            --set scaling.memoryLimit=$maxMemory \
+            --set scaling.cpuLimit=$maxCPU \
+            --set rollingUpdate.maxUnavailable=$maxUnavailable \
+            --set rollingUpdate.maxSurge=$maxSurge
+          
+          echo "Executing for $tenant with $replicas replicas"
+          # Add your custom commands for each $name and $replicas here
+        done
+
+
+    # TODO: Maybe change to universal key
+
+    # Continue on error, because a few keys cannot be deleted
+    - name: Delete existing secrets
+      continue-on-error: true 
+      run: |
+        kubectl delete secret gcp-sa-key -n authentication
+        kubectl delete secret gcp-sa-key -n frontend
+
+        tenants=$(jq -r '.[].name' tenants.json)
+        echo $tenants
+        for tenant in $tenants; do
+          kubectl delete secret gcp-sa-key -n $tenant
+          echo $tenant
+        done
+
+    # Continue on error, because error could be caused through a new tenant
+    - name: Delete not used keys
+      continue-on-error: true
+      run: |
+        for key in $(gcloud iam service-accounts keys list --iam-account ${{ env.SERVICE_ACCOUNT_EMAIL }} --format="value(KEY_ID)"); do
+          if [ "$key" != "${{ inputs.key_id}}" ]; then
+            gcloud iam service-accounts keys delete $key --iam-account ${{ env.SERVICE_ACCOUNT_EMAIL }} --quiet
+          fi
+        done
+
+    # Create secrets and keys
+    - name: Get Key and create it for each namespace
+      id: key
+      run: |
+        gcloud iam service-accounts keys create key.json --iam-account=${{ env.SERVICE_ACCOUNT_EMAIL }}
+        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n authentication
+
+        kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n frontend
+
+        tenants=$(jq -r '.[].name' tenants.json)
+        echo $tenants
+        for tenant in $tenants; do
+          kubectl create secret generic gcp-sa-key --from-file=key.json=key.json -n $tenant
+          echo $tenant
+        done
+
+    - name: Upgrade services
+      if: steps.key.outcome == 'success'
+      run: |
+        helm upgrade gateway ${{ env.HELM_CHART_PATH }}/infrastructure/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set productive=${{ inputs.productive }}
+
+        helm upgrade frontend ${{ env.HELM_CHART_PATH }}/frontend/helm \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set frontend.version=${{ inputs.frontend-version }} \
+          --set productive=${{ inputs.productive }}
+
+        helm upgrade authentication ${{ env.HELM_CHART_PATH }}/authentication/helm \
+          --set resources.database=${{inputs.database}} \
+          --set resources.bucket=${{ inputs.bucket }} \
+          --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+          --set userTenantManagement.version=${{ inputs.user-tenant-management-version }} \
+          --set productive=${{ inputs.productive }}
+
+        jq -c '.[]' tenants.json | while read -r entry; do
+          tenant=$(echo "$entry" | jq -r '.name')
+          replicas=$(echo "$entry" | jq -r '.replicas')
+          maxReplicas=$(echo "$entry" | jq -r '.maxReplicas')
+          maxUnavailable=$(echo "$entry" | jq -r '.maxUnavailable')
+          maxSurge=$(echo "$entry" | jq -r '.maxSurge')
+          averageUtilization=$(echo "$entry" | jq -r '.averageUtilization')
+          maxCPU=$(echo "$entry" | jq -r '.maxCPU')
+          maxMemory=$(echo "$entry" | jq -r '.maxMemory')
+
+          helm upgrade parkspace-$tenant ${{ env.HELM_CHART_PATH }}/backend/helm \
+            --set namespace=$tenant \
+            --set resources.database=${{inputs.database}} \
+            --set resources.bucket=${{ inputs.bucket }} \
+            --set googleProject.name=${{ secrets.GC_PROJECT_ID }} \
+            --set parkingManagement.version=${{ inputs.parking-management-version }} \
+            --set parkingGarages.version=${{ inputs.parking-garages-version }} \
+            --set facilityManagement.version=${{ inputs.facility-management-version }} \
+            --set defectManagement.version=${{ inputs.defect-management-version }} \
+            --set productive=${{ inputs.productive }} \
+            --set replicaCount=$replicas  \
+            --set scaling.averageUtilization=$averageUtilization \
+            --set scaling.maxReplicas=$maxReplicas \
+            --set scaling.memoryLimit=$maxMemory \
+            --set scaling.cpuLimit=$maxCPU \
+            --set rollingUpdate.maxUnavailable=$maxUnavailable \
+            --set rollingUpdate.maxSurge=$maxSurge
+          
+          echo "Executing for $tenant with $replicas replicas"
+          # Add your custom commands for each $name and $replicas here
+        done
