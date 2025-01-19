@@ -13,8 +13,8 @@ on:
         default: msi-cad-vw-database
       productive:
         required: false
-        type: string
-        default: "true"
+        type: boolean
+        default: true
       bucket:
         required: false
         type: string

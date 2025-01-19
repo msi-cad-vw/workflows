@@ -16,8 +16,8 @@ on:
         default: msi-cad-vw-bucket
       productive:
         required: false
-        type: string
-        default: "true"
+        type: boolean
+        default: true
       frontend-version:
         required: true
         type: string
